@@ -1,0 +1,71 @@
+name: Deploy to AKS
+
+on: 
+    push:
+        branches: ["main"]
+
+env:
+  APP_NAME: flask-app
+  IMAGE_TAG: ${{ github.repository_id }}
+
+permissions:
+    id-token: write
+    contents: read
+
+jobs:
+    upload:
+        runs-on: ubuntu-latest
+
+        steps:
+            - name: Checkout Code
+              uses: actions/checkout@v4
+
+            - name: Set up Docker Buildx
+              uses: docker/setup-buildx-action@v3
+
+            - name: Build Docker Image
+              run: |
+                docker build -t $APP_NAME:$IMAGE_TAG .
+
+            - name: Azure Login (OIDC)
+              uses: azure/login@v2
+              with:
+                client-id: ${{ secrets.AZURE_CLIENT_ID }}
+                tenant-id: ${{ secrets.AZURE_TENANT_ID }}
+                subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+
+            # - name: Get secrets from Azure Key Vault
+            #   run: |
+            #     ACR_USERNAME=$(az keyvault secret show \
+            #       --vault-name implocker \
+            #       --name acr-username \
+            #       --query value -o tsv)
+            #     ACR_PASS=$(az keyvault secret show \
+            #       --vault-name implocker \
+            #       --name acr-pass \
+            #       --query value -o tsv)
+            #     echo "ACR_USERNAME=$ACR_USERNAME" >> $GITHUB_ENV
+            #     echo "ACR_PASS=$ACR_PASS" >> $GITHUB_ENV
+
+            - name: Get secrets from GitHub Secrets
+              id: get-azure-keyvault-secrets
+              uses: copdips/get-azure-keyvault-secrets-action@v1
+              with:
+                keyvault: implocker
+              
+            - name: Login to ACR
+              run: |
+                az acr login --name $ACR_USERNAME
+
+            - name: Docker login to ACR
+              run: |
+                docker login $ACR_USERNAME.azurecr.io \
+                -u $ACR_USERNAME \
+                -p $ACR_PASS
+
+            - name: Push Docker Image to ACR
+              run: |
+                docker tag $APP_NAME:$IMAGE_TAG $ACR_USERNAME.azurecr.io/$APP_NAME:$IMAGE_TAG
+                docker push $ACR_USERNAME.azurecr.io/$APP_NAME:$IMAGE_TAG 
+
+        
