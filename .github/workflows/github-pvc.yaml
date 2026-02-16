@@ -62,6 +62,12 @@ jobs:
             #     docker tag $APP_NAME:$IMAGE_TAG $ACR_USERNAME.azurecr.io/$APP_NAME:$IMAGE_TAG
             #     docker push $ACR_USERNAME.azurecr.io/$APP_NAME:$IMAGE_TAG 
 
+            - name: Set AKS context
+              uses: azure/aks-set-context@v3
+              with:
+                resource-group: BlobDatabase
+                cluster-name: flaskAppCluster
+
             - name: Deploy flask-app to AKS
               run: |
                 kubectl apply -f k8s/pv.yaml
