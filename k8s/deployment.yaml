@@ -15,7 +15,7 @@ spec:
     spec:
       containers:
       - name: flask
-        image: flaskAppRegistory.azurecr.io/flask-app:1156999980
+        image: flaskAppRegistory.azurecr.io/flask-app:22074702765
         ports:
         - containerPort: 5000
         volumeMounts:
