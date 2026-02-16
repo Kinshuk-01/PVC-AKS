@@ -54,7 +54,7 @@ jobs:
               run: |
                 docker buildx build \
                   --platform linux/amd64 \
-                  -t flaskappregistory.azurecr.io/flask-app:${{ github.run_id }} \
+                  -t flaskappregistory.azurecr.io/flask-app:aks-latest \
                   --push .
 
             # - name: Push Docker Image to ACR
@@ -62,4 +62,10 @@ jobs:
             #     docker tag $APP_NAME:$IMAGE_TAG $ACR_USERNAME.azurecr.io/$APP_NAME:$IMAGE_TAG
             #     docker push $ACR_USERNAME.azurecr.io/$APP_NAME:$IMAGE_TAG 
 
-        
+            - name: Deploy flask-app to AKS
+              run: |
+                kubectl apply -f k8s/pv.yaml
+                kubectl apply -f k8s/pvc.yaml
+                kubectl apply -f k8s/deployment.yaml
+                kubectl apply -f k8s/service.yaml
+                kubectl rollout restart deployment flask-app
